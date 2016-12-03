@@ -58,7 +58,7 @@ void setStatus() {
   int rightDryer=0;
 
   // poll for an entire minute
-  for(int i=0;i<=59;i++) {
+  for(int i=0;i<=118;i++) {
     washerVal = digitalRead(washerPin);
     dryerVal = digitalRead(dryerPin);
     if(washerVal == 0) {
@@ -162,12 +162,12 @@ void connectWifi() {
 */
 byte pushOver(char *pushovermessage)
 {
- WiFiClient client = server.available();   // listen for incoming clients
  String message = pushovermessage;
-
  Serial.print("Sending message to pushover: ");
  Serial.println(message);
  Serial.println();
+ 
+ WiFiClient client = server.available();   // listen for incoming clients
 
  int length = 81 + message.length();
 
