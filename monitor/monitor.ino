@@ -113,12 +113,14 @@ void setStatus() {
   if(priorWasherStatus && !washerRunning && !dryerRunning) {
     // notify
     Serial.println("Washer is done!");
+    pushOver("Washer is done running");
   }
   // if dryer has stopped running
   if(priorDryerStatus && !dryerRunning)
   {
     // notify
     Serial.println("Dryer is done!");
+    pushOver("Dryer is done running");
   }
 }
 
@@ -150,6 +152,8 @@ void connectWifi() {
   Serial.print("signal strength (RSSI):");
   Serial.print(rssi);
   Serial.println(" dBm");
+
+  pushOver("Washer/Dryer Monitor is online.");
 }
 
 /*
