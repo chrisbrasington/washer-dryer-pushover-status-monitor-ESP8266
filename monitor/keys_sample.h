@@ -2,7 +2,7 @@
 const char* ssid = "";
 const char* password = "";
 
-// Pushover settings
+// pushover settings
 const char pushoversite[] = "api.pushover.net";
 const char apitoken[] = "";
 const char userkey [] = "";
