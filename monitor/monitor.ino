@@ -46,6 +46,7 @@ int pollingFrequency = 118;
 // this is useful to allow a % margin of error for shakes when not running
 int frequencyAllowance = 12;
 
+// initial setup function run immediately on power-on of ESP8266/arduino
 void setup() {
   // begin serial output
   Serial.begin(115200);
@@ -61,12 +62,16 @@ void setup() {
   server.begin();
 }
 
+// main loop
 void loop() {
+  // check washer/dryer status and notify
   checkStatus();
 
+  // delay main check
   delay(loopDelay);
 }
 
+// check status and notify
 void checkStatus() {
 
   Serial.print("\nReading Status");
