@@ -1,3 +1,13 @@
+
+/*
+   Washer & Dryer Status Monitor
+   Using ESP8266 adafruit feather huzzah
+   Push notifications via PushOver API
+
+   by Christopher Brasington 2016
+
+   https://github.com/chrisbrasington/washer-dryer-pushover-status-monitor-ESP8266
+*/
 #include <SPI.h>
 #include <ESP8266WiFi.h>
 
@@ -8,28 +18,40 @@
 // wifi server for sending messages to pushover
 WiFiServer server(80);
 
+// booleans which hold if each machine is running
 bool washerRunning = false;
 bool dryerRunning = false;
 
+// input pins for vibration sensors into arduino
 int washerPin = 4;
 int dryerPin = 5;
 
+// values read from vibration sensor input pins
 int washerVal = 0;
 int dryerVal = 0;
 
-
+// delay interval of main loop
 int loopDelay = 60000; // five minutes = 300000, 1 minute = 60000
-int checkDelay = 1000;  // 1,000 ms = 1 seconds
+
+// delay interval of checking (every 2 seconds)
+int checkDelay = 2000;  // 1,000 ms = 1 seconds
+
+// amount of times to check
+// 118 (2 minutes) of checks, but checking every 2 seconds
+//   is actually 4 minutes of polling interval total
+int pollingFrequency = 118;
 
 // how many seconds out of polling (minute) must movement be felt
 //   to be considered "running"
-int frequencyAllowance = 2;
+// this is useful to allow a % margin of error for shakes when not running
+int frequencyAllowance = 12;
 
 void setup() {
   // begin serial output
   Serial.begin(115200);
   delay(100);
 
+  // setup pins
   pinMode(washerPin, INPUT);
   pinMode(dryerPin, INPUT);
 
@@ -40,27 +62,35 @@ void setup() {
 }
 
 void loop() {
-  setStatus();
+  checkStatus();
 
   delay(loopDelay);
 }
 
-void setStatus() {
+void checkStatus() {
 
   Serial.print("\nReading Status");
 
+  // cache prior status (if changed, notify)
   bool priorWasherStatus = washerRunning;
   bool priorDryerStatus = dryerRunning;
-  
+
+  // using a digital (not analog read)
+  // counters for the number of left/right hits
+  //   on the 2 vibration sensors
   int leftWasher=0;
   int rightWasher=0;
-  int leftDyer=0;
+  int leftDryer=0;
   int rightDryer=0;
 
-  // poll for an entire minute
-  for(int i=0;i<=118;i++) {
+  // poll pollingFrequency # of times
+  for(int i=0;i<=pollingFrequency;i++) {
+
+    // read both pins
     washerVal = digitalRead(washerPin);
     dryerVal = digitalRead(dryerPin);
+
+    // increment counters
     if(washerVal == 0) {
       leftWasher = leftWasher+1;
     }
@@ -68,23 +98,24 @@ void setStatus() {
       rightWasher = rightWasher+1;
     }
     if(dryerVal == 0) {
-      leftDyer = leftDyer+1;
+      leftDryer = leftDryer+1;
     }
     else {
       rightDryer = rightDryer+1;
     }
-
     if(i%10==0) {
       Serial.print(".");
     }
+
+    // delay individual checks (every checkDelay seconds)
     delay(checkDelay);       
-    
   }
 
+  // detect no movement on washer
   if(leftWasher == 0 || rightWasher == 0){
-    // no washer movement
     washerRunning = false;
   }
+  // detect "allowance" movement on washer
   else {
     // movement
     if(leftWasher > frequencyAllowance || rightWasher > frequencyAllowance){
@@ -92,17 +123,19 @@ void setStatus() {
     }
   }
 
-  if(leftDyer == 0 || rightDryer == 0){
-    // no washer movement
+  // detect no movement on dryer
+  if(leftDryer == 0 || rightDryer == 0){
     dryerRunning = false;
   }
+  // detect "allowance" movement on dryer
   else {
     // movement
-    if(leftDyer > frequencyAllowance || rightDryer > frequencyAllowance){
+    if(leftDryer > frequencyAllowance || rightDryer > frequencyAllowance){
       dryerRunning = true;
     }
   }
 
+  // print status 
   Serial.print("\nWasher status: ");
   Serial.println(washerRunning);
   Serial.print("Dryer  status: ");
