@@ -30,10 +30,6 @@ int dryerPin = 5;
 int washerVal = 0;
 int dryerVal = 0;
 
-// delay interval of main loop
-//float loopDelay = 1000*10; // five minutes = 300000, 1 minute = 60000
-float loopDelay = 1000*60*5;
-
 // poll for seconds
 float secondRun = 59*5;
 
@@ -64,17 +60,9 @@ void setup() {
 // main loop
 void loop() {
   printLine();
+  
   // check washer/dryer status and notify
   checkStatus();
-
-  Serial.println();
-  Serial.print("Waiting ");
-  Serial.print((loopDelay/1000)/60);
-  Serial.println(" minutes.");
-  printLine();
-  
-  // delay main check
-  delay(loopDelay);
 }
 
 // check status and notify
@@ -158,7 +146,7 @@ void checkStatus() {
       }
     }
   
-    if(percentageDryer > 10){
+    if(percentageDryer > 5){
       dryerVibrationDetected = dryerVibrationDetected +1; 
     }
     else {
