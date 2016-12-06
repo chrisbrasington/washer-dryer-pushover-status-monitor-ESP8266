@@ -29,5 +29,3 @@ When dryer finishes, dryer will notify.
 ### Run duration:
 
 You likely want to tweak the vibration sensitivity on the modules with a screwdriver.
-
-You may want to alter the delay variables for washer/dryer cycles. My washer's rinse cycle isn't easily detected. I poll vibrations every second for 2 minutes to determine status. Then I delay looping for a minute. You may want to change this to 1 minute check and 5 minute delay, or whatever works for your machine.
