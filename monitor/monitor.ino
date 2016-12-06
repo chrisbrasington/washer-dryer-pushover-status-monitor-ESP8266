@@ -31,15 +31,14 @@ int washerVal = 0;
 int dryerVal = 0;
 
 // delay interval of main loop
-int loopDelay = 60000; // five minutes = 300000, 1 minute = 60000
+//float loopDelay = 1000*10; // five minutes = 300000, 1 minute = 60000
+float loopDelay = 1000*60*5;
 
-// delay interval of checking (every 2 seconds)
-int checkDelay = 2000;  // 1,000 ms = 1 seconds
+// poll for seconds
+float secondRun = 59*5;
 
 // amount of times to check
-// 118 (2 minutes) of checks, but checking every 2 seconds
-//   is actually 4 minutes of polling interval total
-int pollingFrequency = 118;
+int pollingFrequency = 11600;
 
 // how many seconds out of polling (minute) must movement be felt
 //   to be considered "running"
@@ -64,9 +63,16 @@ void setup() {
 
 // main loop
 void loop() {
+  printLine();
   // check washer/dryer status and notify
   checkStatus();
 
+  Serial.println();
+  Serial.print("Waiting ");
+  Serial.print((loopDelay/1000)/60);
+  Serial.println(" minutes.");
+  printLine();
+  
   // delay main check
   delay(loopDelay);
 }
@@ -74,91 +80,139 @@ void loop() {
 // check status and notify
 void checkStatus() {
 
-  Serial.print("\nReading Status");
+  Serial.print("Reading Status");
 
   // cache prior status (if changed, notify)
   bool priorWasherStatus = washerRunning;
   bool priorDryerStatus = dryerRunning;
 
+  float washerVibrationDetected = 0;
+  float washerVibrationNotDetected = 0;
+  float dryerVibrationDetected = 0;
+  float dryerVibrationNotDetected = 0;
+
+
+
+  Serial.print(" for ");
+  Serial.print(secondRun/59);
+  Serial.println(" minutes.");
+  
+
   // using a digital (not analog read)
   // counters for the number of left/right hits
   //   on the 2 vibration sensors
-  int leftWasher=0;
-  int rightWasher=0;
-  int leftDryer=0;
-  int rightDryer=0;
+  for(int second = 0; second < secondRun; second++) {
+    float leftWasher=0;
+    float rightWasher=0;
+    float leftDryer=0;
+    float rightDryer=0;
 
-  // poll pollingFrequency # of times
-  for(int i=0;i<=pollingFrequency;i++) {
-
-    // read both pins
-    washerVal = digitalRead(washerPin);
-    dryerVal = digitalRead(dryerPin);
-
-    // increment counters
-    if(washerVal == 0) {
-      leftWasher = leftWasher+1;
+    // poll pollingFrequency # of times
+    for(int ms=0;ms<=999;ms++) {
+  
+      // read both pins
+      washerVal = digitalRead(washerPin);
+      dryerVal = digitalRead(dryerPin);
+  
+      // increment counters
+      if(washerVal == 0) {
+        leftWasher = leftWasher+1;
+      }
+      else {
+        rightWasher = rightWasher+1;
+      }
+      if(dryerVal == 0) {
+        leftDryer = leftDryer+1;
+      }
+      else {
+        rightDryer = rightDryer+1;
+      }
+      // delay individual checks (every checkDelay seconds)
+      delay(1);       
+    }
+    
+    float percentageWasher = 0;
+    if(leftWasher != 0 && rightWasher != 0) {
+      if(leftWasher < rightWasher) {
+        percentageWasher = (leftWasher/999)*100;
+      }
+      else {
+        percentageWasher = (rightWasher/999)*100;
+      }
+    }
+  
+    if(percentageWasher > 10){
+      washerVibrationDetected = washerVibrationDetected +1; 
     }
     else {
-      rightWasher = rightWasher+1;
+      washerVibrationNotDetected = washerVibrationNotDetected + 1;
     }
-    if(dryerVal == 0) {
-      leftDryer = leftDryer+1;
+
+    float percentageDryer = 0;
+    if(leftDryer != 0 && rightDryer != 0) {
+      if(leftDryer < rightDryer) {
+        percentageDryer = (leftDryer/999)*100;
+      }
+      else {
+        percentageDryer = (rightDryer/999)*100;
+      }
+    }
+  
+    if(percentageDryer > 10){
+      dryerVibrationDetected = dryerVibrationDetected +1; 
     }
     else {
-      rightDryer = rightDryer+1;
-    }
-    if(i%10==0) {
-      Serial.print(".");
-    }
-
-    // delay individual checks (every checkDelay seconds)
-    delay(checkDelay);       
-  }
-
-  // detect no movement on washer
-  if(leftWasher == 0 || rightWasher == 0){
-    washerRunning = false;
-  }
-  // detect "allowance" movement on washer
-  else {
-    // movement
-    if(leftWasher > frequencyAllowance || rightWasher > frequencyAllowance){
-      washerRunning = true;
+      dryerVibrationNotDetected = dryerVibrationNotDetected + 1;
     }
   }
-
-  // detect no movement on dryer
-  if(leftDryer == 0 || rightDryer == 0){
-    dryerRunning = false;
-  }
-  // detect "allowance" movement on dryer
-  else {
-    // movement
-    if(leftDryer > frequencyAllowance || rightDryer > frequencyAllowance){
-      dryerRunning = true;
-    }
-  }
-
-  // print status 
-  Serial.print("\nWasher status: ");
-  Serial.println(washerRunning);
-  Serial.print("Dryer  status: ");
-  Serial.print(dryerRunning);
   Serial.println();
+  Serial.print("Washer vibration: ");
+  Serial.print((washerVibrationDetected/secondRun)*100);
+  Serial.print("% running during ");
+  Serial.print(secondRun/59);
+  Serial.println(" minute duration.");
+  
+  washerRunning = (washerVibrationDetected/secondRun) > .10;
 
-  // if washer has stopped running (and dryer isn't running)
+  if(washerRunning) {
+    Serial.println("Washer is running.");
+  }
+  else {
+    Serial.println("Washer is not running.");
+  }
+
+ // if washer has stopped running (and dryer isn't running)
   if(priorWasherStatus && !washerRunning && !dryerRunning) {
     // notify
     Serial.println("Washer is done!");
-    pushOver("Washer is done running");
+    pushOver("Washer is done running.");
   }
+  else if(priorWasherStatus && !washerRunning && dryerRunning) {
+    Serial.println("Washer is done, but dryer is running. Will not notify");
+  }
+  
+  Serial.println();
+  Serial.print("Dryer vibration: ");
+  Serial.print((dryerVibrationDetected/secondRun)*100);
+  Serial.print("% running during ");
+  Serial.print(secondRun/59);
+  Serial.println(" minute duration.");
+  
+  dryerRunning = (dryerVibrationDetected/secondRun) > .10;
+
+  if(dryerRunning) {
+    Serial.println("Dryer is running.");
+  }
+  else {
+    Serial.println("Dryer is not running.");
+  }
+
   // if dryer has stopped running
   if(priorDryerStatus && !dryerRunning)
   {
     // notify
     Serial.println("Dryer is done!");
-    pushOver("Dryer is done running");
+    pushOver("Dryer is done running.");
   }
 }
 
@@ -168,7 +222,7 @@ void connectWifi() {
   Serial.println();
   Serial.println();
   Serial.print("Connecting to ");
-  Serial.println(ssid);
+  Serial.print(ssid);
   
   WiFi.begin(ssid, password);
   
@@ -190,8 +244,12 @@ void connectWifi() {
   Serial.print("signal strength (RSSI):");
   Serial.print(rssi);
   Serial.println(" dBm");
-
+  Serial.println();
   pushOver("Washer/Dryer Monitor is online.");
+}
+
+void printLine(){
+  Serial.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 }
 
 /*
@@ -202,9 +260,8 @@ byte pushOver(char *pushovermessage)
 {
  String message = pushovermessage;
  Serial.print("Sending message to pushover: ");
- Serial.println(message);
- Serial.println();
- 
+ Serial.println(message);;
+
  WiFiClient client = server.available();   // listen for incoming clients
 
  int length = 81 + message.length();
