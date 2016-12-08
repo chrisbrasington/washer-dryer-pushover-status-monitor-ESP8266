@@ -42,7 +42,7 @@ int resetInterval = 600;
 
 // how much movement must be detected before resetInterval 
 //   to be considered active?
-int threshold = 100;
+int threshold = 300;
 
 // initial setup function run immediately on power-on of ESP8266/arduino
 void setup() {
