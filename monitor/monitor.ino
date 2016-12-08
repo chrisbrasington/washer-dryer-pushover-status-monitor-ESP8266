@@ -31,7 +31,7 @@ int washerVal = 0;
 int dryerVal = 0;
 
 // poll for seconds
-float secondRun = 59*5;
+float secondRun = 59*2;
 
 // amount of times to check
 int pollingFrequency = 11600;
@@ -40,6 +40,8 @@ int pollingFrequency = 11600;
 //   to be considered "running"
 // this is useful to allow a % margin of error for shakes when not running
 int frequencyAllowance = 12;
+
+int percentageAllowance = 10;
 
 // initial setup function run immediately on power-on of ESP8266/arduino
 void setup() {
@@ -129,7 +131,7 @@ void checkStatus() {
       }
     }
   
-    if(percentageWasher > 10){
+    if(percentageWasher > percentageAllowance){
       washerVibrationDetected = washerVibrationDetected +1; 
     }
     else {
@@ -146,11 +148,46 @@ void checkStatus() {
       }
     }
   
-    if(percentageDryer > 5){
+    if(percentageDryer > percentageAllowance){
       dryerVibrationDetected = dryerVibrationDetected +1; 
     }
     else {
       dryerVibrationNotDetected = dryerVibrationNotDetected + 1;
+    }
+    if(second != 0 && second%10 == 0) {
+      Serial.print(second);
+      Serial.println(" seconds");
+      
+      Serial.print("  Washer Detection: On ");
+      Serial.print(washerVibrationDetected);
+      Serial.print(" Off ");
+      Serial.print(washerVibrationNotDetected);
+      Serial.print(". --- ");
+
+      Serial.print("Dyer Detection: On ");
+      Serial.print(dryerVibrationDetected);
+      Serial.print(" Off ");
+      Serial.print(dryerVibrationNotDetected);
+      Serial.println();
+
+      Serial.print("  Washer is ");
+      if(washerVibrationDetected != 0 && 
+        (washerVibrationDetected/second)*100 > percentageAllowance) {
+        Serial.print("ON");
+      }
+      else {
+        Serial.print("OFF");
+      }
+
+      Serial.print(". Dryer is ");
+      if(dryerVibrationDetected != 0 && 
+        (dryerVibrationDetected/second)*100 > percentageAllowance) {
+        Serial.print("ON");
+      }
+      else {
+        Serial.print("OFF");
+      } 
+      Serial.println(".");
     }
   }
   Serial.println();
