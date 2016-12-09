@@ -39,7 +39,7 @@ int delayRead = 100;
 // if resting for 1 minute, detect a state change (from ON to OFF)
 //    or reset counters to remove noise
 int resetIntervalWasher = 1500; // 2.5 minutes (rinse mid-cycle is longer with no shakes)
-int resetIntervalDryer = 600;   // 1 minute
+int resetIntervalDryer = 1200;   // 2 minutes
 
 // how much movement must be detected before resetInterval 
 //   to be considered active?
