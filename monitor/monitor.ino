@@ -38,7 +38,8 @@ int delayRead = 100;
 // 0.1s * 600 = 60 seconds = 1 minute
 // if resting for 1 minute, detect a state change (from ON to OFF)
 //    or reset counters to remove noise
-int resetInterval = 600;
+int resetIntervalWasher = 1500; // 2.5 minutes (rinse mid-cycle is longer with no shakes)
+int resetIntervalDryer = 600;   // 1 minute
 
 // how much movement must be detected before resetInterval 
 //   to be considered active?
@@ -84,7 +85,7 @@ void loop() {
   }
 
   // if no washer movement for 1 minute
-  if(washerRest > resetInterval) {
+  if(washerRest > resetIntervalWasher) {
     // if washer has been active enough
     if(washerShakes > threshold) {
       // detect washer state switch from ON to OFF
@@ -93,8 +94,9 @@ void loop() {
     washerShakes = 0;
     washerRest = 0;
   }
+  bool bothRunning = false;
   // if no dryer movement for 1 minute
-  if(dryerRest > resetInterval) {
+  if(dryerRest > resetIntervalDryer) {
     // if dryer has been active enough
     if(dryerShakes > threshold) {
       // detect dryer state switch from ON to OFF
@@ -103,12 +105,26 @@ void loop() {
     dryerShakes = 0;
     dryerRest = 0;
   }
+  // allow a running dryer to suppress the washer
+  // since dryer runs much longer and a load cannot yet 
+  //   be moved from the washer to the dryer,
+  //   this allows only the dryer to be the notifier
+  //   of the completion of both machines
+  else if(dryerShakes > threshold) {
+    washerShakes = 0;
+    washerRest = 0;
+    bothRunning = true;
+  }
 
   Serial.print("Washer Shakes (");
   Serial.print(washerShakes);
   Serial.print(") Rest (");
   Serial.print(washerRest);
-  Serial.print(") --- Dryer Shakes (");
+  Serial.print(")");
+  if(bothRunning) {
+    Serial.print(" (suppressed)");
+  }
+  Serial.print(" --- Dryer Shakes (");
   Serial.print(dryerShakes);
     Serial.print(") Rest (");
   Serial.print(dryerRest);
